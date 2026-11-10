@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-Supported Assessment Platform</title>
+<style>
+  :root {
+    --bg: #f1f5f9; --card: #ffffff; --ink: #1e293b; --muted: #64748b;
+    --primary: #3b82f6; --primary-dark: #2563eb; --soft: #e0ecff;
+    --good: #16a34a; --good-bg: #dcfce7; --bad: #dc2626; --bad-bg: #fee2e2;
+    --warn: #d97706; --warn-bg: #fef3c7; --border: #e2e8f0;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, #3b82f6, #6366f1); color: #fff;
+    text-align: center; padding: 48px 20px 40px;
+  }
+  header h1 { margin: 0 0 8px; font-size: clamp(1.6rem, 6vw, 2.4rem); }
+  header p { margin: 0 auto; max-width: 560px; opacity: .92; }
+  nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 20px; }
+  nav a {
+    color: #fff; text-decoration: none; background: rgba(255,255,255,.18);
+    padding: 6px 14px; border-radius: 999px; font-size: .9rem; transition: background .2s;
+  }
+  nav a:hover { background: rgba(255,255,255,.35); }
+  main { max-width: 800px; margin: 0 auto; padding: 24px 16px 48px; }
+  section {
+    background: var(--card); border-radius: 16px; padding: 24px;
+    margin-bottom: 24px; box-shadow: 0 2px 10px rgba(15,23,42,.06);
+    scroll-margin-top: 16px;
+  }
+  h2 { margin-top: 0; color: var(--primary-dark); font-size: 1.4rem; }
+  h3 { margin-bottom: 6px; }
+  .progress { height: 8px; background: var(--soft); border-radius: 99px; overflow: hidden; margin-bottom: 16px; }
+  .progress div { height: 100%; width: 0; background: var(--primary); transition: width .3s; }
+  .qcount { color: var(--muted); font-size: .9rem; margin-bottom: 4px; }
+  .question { font-size: 1.15rem; font-weight: 600; margin-bottom: 16px; }
+  .options { display: grid; gap: 10px; }
+  .option {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+    background: #f8fafc; border: 2px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; font-size: 1rem; color: var(--ink); cursor: pointer;
+    transition: transform .15s, border-color .15s, background .15s, box-shadow .15s;
+  }
+  .option:hover { border-color: var(--primary); background: var(--soft); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(59,130,246,.15); }
+  .option.selected { border-color: var(--primary-dark); background: var(--soft); }
+  .letter {
+    flex: none; width: 30px; height: 30px; border-radius: 50%; background: #fff;
+    border: 2px solid var(--border); display: grid; place-items: center; font-weight: 700; font-size: .9rem;
+  }
+  .option.selected .letter { background: var(--primary-dark); color: #fff; border-color: var(--primary-dark); }
+  .btn {
+    margin-top: 18px; background: var(--primary); color: #fff; border: 0; border-radius: 10px;
+    padding: 12px 24px; font-size: 1rem; font-weight: 600; cursor: pointer;
+    transition: background .2s, transform .15s, box-shadow .2s;
+  }
+  .btn:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 14px rgba(37,99,235,.3); }
+  .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .btn.secondary { background: #fff; color: var(--primary-dark); border: 2px solid var(--primary); }
+  .btn.secondary:hover:not(:disabled) { background: var(--soft); }
+  .score { text-align: center; padding: 8px 0; }
+  .score .big { font-size: 3rem; font-weight: 800; color: var(--primary-dark); }
+  .hidden { display: none; }
+  .key-item { border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .key-item .ans { display: inline-block; background: var(--good-bg); color: var(--good); padding: 2px 10px; border-radius: 8px; font-weight: 600; margin: 6px 0; }
+  .yours { font-size: .9rem; margin: 2px 0; }
+  .yours.ok { color: var(--good); } .yours.no { color: var(--bad); }
+  .sample { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .tag { display: inline-block; padding: 2px 12px; border-radius: 99px; font-size: .8rem; font-weight: 700; margin-bottom: 8px; }
+  .tag.strong { background: var(--good-bg); color: var(--good); }
+  .tag.average { background: var(--warn-bg); color: var(--warn); }
+  .tag.weak { background: var(--bad-bg); color: var(--bad); }
+  .student { background: #f8fafc; border-left: 4px solid var(--muted); padding: 10px 14px; border-radius: 6px; white-space: pre-line; }
+  .box { border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+  .ai { background: var(--soft); }
+  .teacher { background: #f1f5f9; border: 1px dashed var(--muted); }
+  .box strong.label { display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+  pre {
+    background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 12px;
+    overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; font-size: .85rem; line-height: 1.55;
+  }
+  footer { text-align: center; color: var(--muted); font-size: .85rem; padding-bottom: 32px; }
+  @media (max-width: 480px) { section { padding: 18px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AI-Supported Assessment Platform</h1>
+  <p>Exploring how AI can create quizzes, give feedback, and stay transparent, with a teacher always in the loop.</p>
+  <nav>
+    <a href="#quiz">1. Quiz</a>
+    <a href="#feedback">2. Feedback</a>
+    <a href="#prompts">3. Prompts</a>
+    <a href="#reflection">4. Reflection</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- SECTION 1 -->
+  <section id="quiz">
+    <h2>1. AI for Assessment: Basic Algebra Quiz</h2>
+    <div id="quiz-box">
+      <div class="progress"><div id="bar"></div></div>
+      <div class="qcount" id="qcount"></div>
+      <div class="question" id="qtext"></div>
+      <div class="options" id="options"></div>
+      <button class="btn" id="nextBtn" disabled>Next</button>
+    </div>
+    <div id="result" class="hidden">
+      <div class="score">
+        <div>Your score</div>
+        <div class="big" id="scoreText"></div>
+        <p id="scoreMsg"></p>
+      </div>
+      <button class="btn secondary" id="retryBtn">Retake Quiz</button>
+    </div>
+    <div id="answer-key" class="hidden">
+      <h3 style="margin-top:28px">Answer Key</h3>
+      <div id="keyList"></div>
+    </div>
+  </section>
+
+  <!-- SECTION 2 -->
+  <section id="feedback">
+    <h2>2. AI-Supported Feedback</h2>
+    <p><strong>Question 3:</strong> Solve for x: 3(x − 2) = 2x + 5</p>
+
+    <div class="sample">
+      <span class="tag strong">STRONG ANSWER</span>
+      <div class="student">3(x − 2) = 2x + 5
+3x − 6 = 2x + 5
+3x − 2x = 5 + 6
+x = 11
+Check: 3(11 − 2) = 27 and 2(11) + 5 = 27 ✓</div>
+      <div class="box ai"><strong class="label">AI-generated feedback</strong>
+        Excellent work! You distributed the 3 correctly, collected the x-terms on one side, and verified your solution by substituting it back. Your steps are clear and easy to follow. Try a challenge next: equations with fractions.</div>
+      <div class="box teacher"><strong class="label">Teacher's Review</strong>
+        The AI's feedback was accurate, but "challenge next" was too vague, so I named a specific next step (fractions). I also added praise for the check step, because that habit is what I want to reinforce.</div>
+    </div>
+
+    <div class="sample">
+      <span class="tag average">AVERAGE ANSWER</span>
+      <div class="student">3x − 6 = 2x + 5
+x = 11</div>
+      <div class="box ai"><strong class="label">AI-generated feedback</strong>
+        Correct answer! You distributed properly and found x = 11. To improve, show the middle steps you skipped and check your answer by substituting it back into the equation.</div>
+      <div class="box teacher"><strong class="label">Teacher's Review</strong>
+        The AI didn't notice that the student jumped from "3x − 6 = 2x + 5" to "x = 11". This may mean the student did the middle steps mentally, or copied the answer. I added a request to explain how they moved the terms, and I suggested a quick oral check in class.</div>
+    </div>
+
+    <div class="sample">
+      <span class="tag weak">WEAK ANSWER (COMMON MISTAKE)</span>
+      <div class="student">3(x − 2) = 2x + 5
+3x − 2 = 2x + 5
+x = 7</div>
+      <div class="box ai"><strong class="label">AI-generated feedback</strong>
+        You are on the right track with moving the x-terms together, but there is an error in the first line. When you multiply 3 by (x − 2), the 3 must multiply both terms, so 3 × (−2) = −6, not −2. Redo the problem with this correction.</div>
+      <div class="box teacher"><strong class="label">Teacher's Review</strong>
+        The AI correctly found the mistake (not distributing to the second term) but gave no hint about why it matters, and "redo the problem" is discouraging. I added a short worked example (2(x + 1) = 2x + 2) and a tip: "draw arrows from the outside number to every term inside the brackets."</div>
+    </div>
+  </section>
+
+  <!-- SECTION 3 -->
+  <section id="prompts">
+    <h2>3. Transparency &amp; Prompts Used</h2>
+    <h3>Prompt 1: Generating the quiz</h3>
+    <pre>Act as an experienced Grade 9 mathematics teacher.
+Create a 5-question multiple-choice quiz on Basic Algebra
+(simplifying expressions, solving linear equations,
+substitution, and factoring a difference of squares).
+
+Requirements:
+- Exactly 4 options per question, labeled A, B, C, D.
+- Only one correct answer per question.
+- Make wrong options based on common student mistakes.
+- Vary the position of the correct answer.
+- After each question, give the correct answer and a
+  1-2 sentence explanation suitable for a 14-year-old.
+- Use plain English and no more than moderate difficulty.
+Return the result as a numbered list.</pre>
+
+    <h3>Prompt 2: Generating feedback</h3>
+    <pre>You are a supportive math teacher giving feedback.
+
+Question: Solve for x: 3(x - 2) = 2x + 5
+Correct answer: x = 11
+
+Student answer:
+"""
+[PASTE STUDENT ANSWER HERE]
+"""
+
+Write feedback for a 14-year-old student in 3-4 sentences:
+1. Start with one specific thing the student did well.
+2. If there is a mistake, identify exactly where it
+   happened and explain why it is incorrect.
+3. Give one concrete next step to improve.
+4. Use an encouraging, respectful tone.
+Do not just give the final answer if the student is wrong.</pre>
+  </section>
+
+  <!-- SECTION 4 -->
+  <section id="reflection">
+    <h2>4. Reflection</h2>
+    <p>AI helped me most with speed. It drafted five algebra questions, plausible wrong options, and first-draft explanations, which gave me more time to think about quality. It also suggested the common mistake of forgetting to distribute, which shaped my weak sample answer.</p>
+    <p>However, AI was not always accurate or sufficient. Its feedback sometimes sounded generic, praised correct answers without noticing skipped steps, and assumed the student's reasoning instead of asking for it. I had to check every calculation and rewrite parts of the feedback so it was specific and encouraging.</p>
+    <p>Next time, I would give the AI a clearer student level, request feedback in short steps, test the quiz with real students, and keep the final judgment with the teacher.</p>
+  </section>
+
+</main>
+
+<footer>Built for a school assignment · AI-Supported Assessment Platform</footer>
+
+<script>
+  const questions = [
+    {
+      q: "Simplify: 3x + 4x − 2x",
+      options: ["9x", "5x", "5", "24x"],
+      correct: 1,
+      explain: "These are like terms, so you combine the coefficients: 3 + 4 − 2 = 5. The variable stays x, so the answer is 5x."
+    },
+    {
+      q: "Solve for x: 2x + 5 = 17",
+      options: ["11", "8", "3", "6"],
+      correct: 3,
+      explain: "Subtract 5 from both sides to get 2x = 12, then divide both sides by 2. This gives x = 6."
+    },
+    {
+      q: "Solve for x: 3(x − 2) = 2x + 5",
+      options: ["7", "3", "11", "−1"],
+      correct: 2,
+      explain: "Distribute the 3: 3x − 6 = 2x + 5. Subtract 2x from both sides: x − 6 = 5. Add 6: x = 11. (Forgetting to multiply −2 by 3 gives the wrong answer 7.)"
+    },
+    {
+      q: "Find the value of 2a² − b when a = 3 and b = 4.",
+      options: ["14", "32", "22", "2"],
+      correct: 0,
+      explain: "Square a first: 3² = 9. Then 2 × 9 = 18, and 18 − 4 = 14. (Computing (2 × 3)² gives the common wrong answer 32.)"
+    },
+    {
+      q: "Factor: x² − 9",
+      options: ["(x − 3)²", "(x − 3)(x + 3)", "(x + 3)²", "(x − 9)(x + 1)"],
+      correct: 1,
+      explain: "This is a difference of squares: a² − b² = (a − b)(a + b). With a = x and b = 3, the factors are (x − 3)(x + 3)."
+    }
+  ];
+
+  const letters = ["A", "B", "C", "D"];
+  let current = 0, selected = null, userAnswers = [];
+
+  const $ = id => document.getElementById(id);
+  const quizBox = $("quiz-box"), result = $("result"), keyBox = $("answer-key");
+
+  function showQuestion() {
+    const item = questions[current];
+    selected = null;
+    $("nextBtn").disabled = true;
+    $("nextBtn").textContent = current === questions.length - 1 ? "Finish" : "Next";
+    $("bar").style.width = (current / questions.length * 100) + "%";
+    $("qcount").textContent = "Question " + (current + 1) + " of " + questions.length;
+    $("qtext").textContent = item.q;
+    const box = $("options");
+    box.innerHTML = "";
+    item.options.forEach((text, i) => {
+      const btn = document.createElement("button");
+      btn.className = "option";
+      btn.innerHTML = '<span class="letter">' + letters[i] + '</span><span></span>';
+      btn.lastChild.textContent = text;
+      btn.addEventListener("click", () => {
+        selected = i;
+        box.querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
+        btn.classList.add("selected");
+        $("nextBtn").disabled = false;
+      });
+      box.appendChild(btn);
+    });
+  }
+
+  $("nextBtn").addEventListener("click", () => {
+    if (selected === null) return;
+    userAnswers.push(selected);
+    current++;
+    if (current < questions.length) showQuestion();
+    else finish();
+  });
+
+  function finish() {
+    quizBox.classList.add("hidden");
+    result.classList.remove("hidden");
+    keyBox.classList.remove("hidden");
+    const score = userAnswers.filter((a, i) => a === questions[i].correct).length;
+    $("scoreText").textContent = score + " / " + questions.length;
+    const msgs = ["Keep practicing, and check the Answer Key below.", "Keep practicing, and check the Answer Key below.",
+      "Good start! Review the explanations below.", "Nice work! Almost there.", "Great job!", "Perfect score! 🎉"];
+    $("scoreMsg").textContent = msgs[score];
+
+    const list = $("keyList");
+    list.innerHTML = "";
+    questions.forEach((item, i) => {
+      const ok = userAnswers[i] === item.correct;
+      const div = document.createElement("div");
+      div.className = "key-item";
+      const h = document.createElement("strong");
+      h.textContent = (i + 1) + ". " + item.q;
+      const yours = document.createElement("div");
+      yours.className = "yours " + (ok ? "ok" : "no");
+      yours.textContent = (ok ? "✓ Your answer: " : "✗ Your answer: ") + letters[userAnswers[i]] + ") " + item.options[userAnswers[i]];
+      const ans = document.createElement("div");
+      ans.className = "ans";
+      ans.textContent = "Correct answer: " + letters[item.correct] + ") " + item.options[item.correct];
+      const why = document.createElement("p");
+      why.style.margin = "4px 0 0";
+      why.textContent = item.explain;
+      div.append(h, yours, ans, why);
+      list.appendChild(div);
+    });
+    $("quiz").scrollIntoView({ behavior: "smooth" });
+  }
+
+  $("retryBtn").addEventListener("click", () => {
+    current = 0; userAnswers = [];
+    result.classList.add("hidden");
+    keyBox.classList.add("hidden");
+    quizBox.classList.remove("hidden");
+    showQuestion();
+    $("quiz").scrollIntoView({ behavior: "smooth" });
+  });
+
+  showQuestion();
+</script>
+</body>
+</html>
